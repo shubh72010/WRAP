@@ -524,4 +524,70 @@ class ImageEditor {
                 const b = data[i + 2];
                 
                 data[i] = Math.min(255, (r * 0.393) + (g * 0.769) + (b * 0.189));
-                data[i + 1] = Math.min(255, (r * 0.349)
+                data[i + 1] = Math.min(255, (r * 0.349) + (g * 0.686) + (b * 0.168));
+                data[i + 2] = Math.min(255, (r * 0.272) + (g * 0.534) + (b * 0.131));
+            }
+            
+            this.ctx.putImageData(imageData, 0, 0);
+        }
+        
+        // Add to history
+        this.addToHistory(`Apply ${filterName} Filter`);
+    }
+    
+    // Layer Methods
+    addLayer(name) {
+        this.layers.push({
+            name: name,
+            visible: true,
+            canvas: document.createElement('canvas')
+        });
+        
+        this.activeLayerIndex = this.layers.length - 1;
+        this.updateLayersPanel();
+    }
+    
+    updateLayersPanel() {
+        const layersPanel = document.getElementById('layers-panel');
+        layersPanel.innerHTML = '';
+        
+        this.layers.forEach((layer, index) => {
+            const layerDiv = document.createElement('div');
+            layerDiv.className = 'layer';
+            
+            if (index === this.activeLayerIndex) {
+                layerDiv.classList.add('active');
+            }
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = layer.name;
+            
+            const visibilityBtn = document.createElement('button');
+            visibilityBtn.className = 'visibility-toggle';
+            visibilityBtn.innerHTML = layer.visible ? 
+                '<i class="fas fa-eye"></i>' : 
+                '<i class="fas fa-eye-slash"></i>';
+            
+            layerDiv.appendChild(nameSpan);
+            layerDiv.appendChild(visibilityBtn);
+            
+            layerDiv.addEventListener('click', () => this.setActiveLayer(index));
+            visibilityBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleLayerVisibility(index);
+            });
+            
+            layersPanel.appendChild(layerDiv);
+        });
+    }
+    
+    setActiveLayer(index) {
+        this.activeLayerIndex = index;
+        this.updateLayersPanel();
+    }
+    
+    toggleLayerVisibility(index) {
+        this.layers[index].visible = !this.layers[index].visible;
+        this.updateLayersPanel();
+    }
+}
