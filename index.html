@@ -3,49 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Editor</title>
+    <title>Advanced Image Editor</title>
     <link rel="stylesheet" href="style.css">
-</head>
-<body>
+</head><body>
     <div class="app-container">
         <header>
-            <h1>Image Editor</h1>
-            <input type="file" id="imageLoader" accept="image/*">
+            <h1>Advanced Image Editor</h1>
+            <div>
+                <label for="imageLoader">Load Image (as new layer):</label>
+                <input type="file" id="imageLoader" accept="image/*">
+            </div>
         </header>
 
         <main>
             <div class="toolbar">
                 <h2>Tools</h2>
-                <button id="btnCrop">Crop</button>
-                <button id="btnResize">Resize</button>
-                <button id="btnRotate">Rotate</button>
-                <h3>Adjustments</h3>
+                <button id="toolSelectRect">Select Area</button>
+                <button id="toolCropSelected">Crop to Selection</button>
+                <button id="btnRotate">Rotate Active Layer</button>
+                <button id="clearSelection">Clear Selection</button>
+                <h3>Adjustments (Active Layer)</h3>
                 <label for="brightness">Brightness:</label>
                 <input type="range" id="brightness" min="0" max="200" value="100">
                 <button id="applyBrightness">Apply Brightness</button>
 
                 <label for="contrast">Contrast:</label>
                 <input type="range" id="contrast" min="0" max="200" value="100">
-                 <button id="applyContrast">Apply Contrast</button>
-                </div>
+                <button id="applyContrast">Apply Contrast</button>
 
-            <div class="canvas-container">
-                <canvas id="imageCanvas"></canvas>
+                <button id="applySharpen">Apply Sharpen</button>
+
+                <h3>History</h3>
+                <button id="undoAction" title="Undo last filter/transform on active layer">Undo</button>
+                <span id="historyStatus">(No history yet)</span>
+
             </div>
+
+            <div class="canvas-area">
+                <p>Canvas (Layers are drawn bottom-up. Click layer in panel to activate.)</p>
+                <div class="canvas-container">
+                    <canvas id="imageCanvas"></canvas>
+                    <canvas id="selectionCanvas"></canvas>
+                </div>
+            </div>
+
 
             <div class="layers-panel">
                 <h2>Layers</h2>
                 <ul id="layerList">
                     </ul>
-                <button id="addLayer">Add Layer</button>
+                <button id="deleteActiveLayer">Delete Active Layer</button>
+                <button id="moveLayerUp">Move Up</button>
+                <button id="moveLayerDown">Move Down</button>
+                 <label for="layerOpacity">Opacity:</label>
+                <input type="range" id="layerOpacity" min="0" max="100" value="100">
+
             </div>
         </main>
 
         <footer>
-            <button id="exportImage">Export Image</button>
+            <button id="exportImage">Export Flattened Image</button>
         </footer>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js"></script> {/* Assuming you prefer app.js */}
 </body>
 </html>
