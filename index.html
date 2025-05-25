@@ -1,132 +1,129 @@
 <!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pro Image Editor</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Image Editor</title>
   <style>
-    body { margin: 0; font-family: sans-serif; background: #111; color: #eee; display: flex; flex-direction: column; align-items: center; }
-    #editor { display: flex; flex-direction: column; gap: 10px; max-width: 100%; padding: 10px; }
-    canvas { border: 1px solid #333; max-width: 100%; height: auto; }
-    .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-    .controls input[type=range] { width: 150px; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
-    button, input[type=color], input[type=range] { padding: 5px; background: #222; color: #eee; border: none; border-radius: 4px; }
-    input[type=file] { background: transparent; color: #eee; }
+    body { font-family: sans-serif; text-align: center; margin: 0; padding: 0; background: #111; color: white; }
+    canvas { border: 2px solid #888; margin: 20px 0; }
+    input[type="file"] { margin-top: 20px; }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 10px; }
+    button, select, input[type="range"] { padding: 8px; border-radius: 5px; border: none; cursor: pointer; background: #333; color: white; }
+    button:hover { background: #444; }
   </style>
 </head>
 <body>
   <h1>Advanced Image Editor</h1>
-  <div id="editor">
-    <input type="file" id="upload" accept="image/*">
-    <canvas id="canvas"></canvas>
-    <div class="controls">
-      <label>Brightness <input type="range" id="brightness" min="-100" max="100" value="0"></label>
-      <label>Contrast <input type="range" id="contrast" min="-100" max="100" value="0"></label>
-      <label>Saturation <input type="range" id="saturation" min="0" max="300" value="100"></label>
-      <label>Blur <input type="range" id="blur" min="0" max="10" value="0"></label>
-    </div>
-    <div class="toolbar">
-      <button onclick="applyFilters()">Apply</button>
-      <button onclick="resetImage()">Reset</button>
-      <button onclick="downloadImage()">Download</button>
-      <input type="color" id="textColor">
-      <button onclick="addText()">Add Text</button>
-      <button onclick="flipHorizontal()">Flip H</button>
-      <button onclick="flipVertical()">Flip V</button>
-      <button onclick="rotate(90)">Rotate 90°</button>
-    </div>
+  <input type="file" id="upload" />
+  <div class="controls">
+    <button onclick="rotate(-90)">Rotate Left</button>
+    <button onclick="rotate(90)">Rotate Right</button>
+    <button onclick="flipX()">Flip Horizontal</button>
+    <button onclick="flipY()">Flip Vertical</button>
+    <button onclick="resetImage()">Reset</button>
+    <button onclick="downloadImage()">Download</button>
+    <input type="range" min="-100" max="100" value="0" id="brightness" onchange="adjust()">Brightness</input>
+    <input type="range" min="-100" max="100" value="0" id="contrast" onchange="adjust()">Contrast</input>
+    <input type="text" id="textInput" placeholder="Add text">
+    <button onclick="addText()">Insert Text</button>
+    <select id="filterSelect" onchange="applyFilter(this.value)">
+      <option value="none">None</option>
+      <option value="grayscale(100%)">Grayscale</option>
+      <option value="sepia(100%)">Sepia</option>
+      <option value="invert(100%)">Invert</option>
+      <option value="blur(2px)">Blur</option>
+      <option value="brightness(150%)">Brighten</option>
+    </select>
   </div>
-  <script>
-    let canvas = document.getElementById('canvas');
-    let ctx = canvas.getContext('2d');
-    let originalImage = null;document.getElementById('upload').addEventListener('change', function(e) {
-  let reader = new FileReader();
-  reader.onload = function(event) {
+  <canvas id="canvas" width="600" height="400"></canvas>  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
     let img = new Image();
-    img.onload = function() {
-      canvas.width = img.width;
-      canvas.height = img.height;
+    let angle = 0, flipH = 1, flipV = 1, originalImg;
+
+    document.getElementById("upload").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          img.onload = () => {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            originalImg = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    function redraw() {
+      ctx.save();
+      ctx.setTransform(flipH, 0, 0, flipV, canvas.width / 2, canvas.height / 2);
+      ctx.clearRect(-canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+      ctx.translate(-canvas.width / 2, -canvas.height / 2);
+      ctx.rotate(angle * Math.PI / 180);
       ctx.drawImage(img, 0, 0);
-      originalImage = img;
+      ctx.restore();
     }
-    img.src = event.target.result;
-  }
-  reader.readAsDataURL(e.target.files[0]);
-});
 
-function applyFilters() {
-  if (!originalImage) return;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.filter = `
-    brightness(${100 + parseInt(document.getElementById('brightness').value)}%)
-    contrast(${100 + parseInt(document.getElementById('contrast').value)}%)
-    saturate(${document.getElementById('saturation').value}%)
-    blur(${document.getElementById('blur').value}px)
-  `;
-  ctx.drawImage(originalImage, 0, 0);
-}
+    function rotate(deg) {
+      angle = (angle + deg) % 360;
+      redraw();
+    }
 
-function resetImage() {
-  if (originalImage) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.filter = 'none';
-    ctx.drawImage(originalImage, 0, 0);
-    document.getElementById('brightness').value = 0;
-    document.getElementById('contrast').value = 0;
-    document.getElementById('saturation').value = 100;
-    document.getElementById('blur').value = 0;
-  }
-}
+    function flipX() {
+      flipH *= -1;
+      redraw();
+    }
 
-function downloadImage() {
-  const link = document.createElement('a');
-  link.download = 'edited-image.png';
-  link.href = canvas.toDataURL();
-  link.click();
-}
+    function flipY() {
+      flipV *= -1;
+      redraw();
+    }
 
-function addText() {
-  const text = prompt('Enter text:');
-  if (text) {
-    ctx.fillStyle = document.getElementById('textColor').value;
-    ctx.font = '40px sans-serif';
-    ctx.fillText(text, 50, 50);
-  }
-}
+    function adjust() {
+      if (!originalImg) return;
+      const brightness = parseInt(document.getElementById("brightness").value);
+      const contrast = parseInt(document.getElementById("contrast").value);
+      let imageData = new ImageData(new Uint8ClampedArray(originalImg.data), originalImg.width, originalImg.height);
+      for (let i = 0; i < imageData.data.length; i += 4) {
+        for (let j = 0; j < 3; j++) {
+          imageData.data[i + j] = truncate((imageData.data[i + j] - 128) * (contrast / 100 + 1) + 128 + brightness);
+        }
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
 
-function flipHorizontal() {
-  let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  ctx.save();
-  ctx.scale(-1, 1);
-  ctx.drawImage(canvas, -canvas.width, 0);
-  ctx.restore();
-}
+    function truncate(value) {
+      return Math.max(0, Math.min(255, value));
+    }
 
-function flipVertical() {
-  ctx.save();
-  ctx.scale(1, -1);
-  ctx.drawImage(canvas, 0, -canvas.height);
-  ctx.restore();
-}
+    function resetImage() {
+      if (!originalImg) return;
+      angle = 0; flipH = 1; flipV = 1;
+      ctx.putImageData(originalImg, 0, 0);
+    }
 
-function rotate(deg) {
-  const offscreen = document.createElement('canvas');
-  const offCtx = offscreen.getContext('2d');
-  offscreen.width = canvas.width;
-  offscreen.height = canvas.height;
-  offCtx.drawImage(canvas, 0, 0);
-  const radians = deg * Math.PI / 180;
+    function addText() {
+      const text = document.getElementById("textInput").value;
+      if (text) {
+        ctx.font = "32px sans-serif";
+        ctx.fillStyle = "white";
+        ctx.fillText(text, 50, 50);
+      }
+    }
 
-  canvas.width = offscreen.height;
-  canvas.height = offscreen.width;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.save();
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(radians);
-  ctx.drawImage(offscreen, -offscreen.width / 2, -offscreen.height / 2);
-  ctx.restore();
-}
+    function applyFilter(filterValue) {
+      canvas.style.filter = filterValue;
+    }
 
-  </script>
-</body>
+    function downloadImage() {
+      const link = document.createElement("a");
+      link.download = "edited-image.png";
+      link.href = canvas.toDataURL();
+      link.click();
+    }
+  </script></body>
 </html>
