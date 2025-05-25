@@ -1,34 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
-  <title>Flay’s Pro Image Editor</title>
-  <link rel="stylesheet" href="style.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Image Editor - Crop Tool</title>
+<style>
+  body, html { margin: 0; padding: 0; height: 100%; display: flex; justify-content: center; align-items: center; background: #222; }
+  #container { position: relative; width: 90vw; max-width: 600px; aspect-ratio: 4/3; background: #444; }
+  canvas { width: 100%; height: 100%; display: block; background: #222; }
+  #crop-box {
+    position: absolute;
+    border: 2px dashed #00ffea;
+    background: rgba(0,255,234,0.2);
+    cursor: move;
+    touch-action: none;
+  }
+  #crop-handles div {
+    width: 12px; height: 12px; background: #00ffea;
+    position: absolute;
+    border-radius: 2px;
+    touch-action: none;
+  }
+  #handle-tl { top: -6px; left: -6px; cursor: nwse-resize; }
+  #handle-tr { top: -6px; right: -6px; cursor: nesw-resize; }
+  #handle-bl { bottom: -6px; left: -6px; cursor: nesw-resize; }
+  #handle-br { bottom: -6px; right: -6px; cursor: nwse-resize; }
+  #controls { margin-top: 12px; text-align: center; }
+  button { background: #00ffea; border: none; padding: 8px 16px; margin: 0 6px; cursor: pointer; font-weight: bold; color: #000; border-radius: 4px; }
+  button:active { transform: scale(0.95); }
+</style>
 </head>
 <body>
-
-  <div id="app">
-    <aside id="sidebar" class="closed">
-      <button id="toggleSidebar" aria-label="Toggle Sidebar">☰</button>
-      <nav>
-        <button class="tool-btn active" data-tool="crop">Crop</button>
-        <button class="tool-btn" data-tool="resize">Resize</button>
-        <button class="tool-btn" data-tool="rotate">Rotate</button>
-        <button class="tool-btn" data-tool="color">Color Adjust</button>
-        <button class="tool-btn" data-tool="layers">Layers</button>
-        <button class="tool-btn" data-tool="filters">Filters</button>
-        <button class="tool-btn" data-tool="export">Export</button>
-      </nav>
-      <div id="toolPanel"></div>
-    </aside>
-
-    <main>
-      <canvas id="editorCanvas" width="800" height="600"></canvas>
-      <input type="file" id="imageLoader" accept="image/*" />
-    </main>
+<div id="container">
+  <canvas id="imageCanvas"></canvas>
+  <div id="crop-box" style="top: 50px; left: 50px; width: 200px; height: 150px;">
+    <div id="crop-handles">
+      <div id="handle-tl"></div>
+      <div id="handle-tr"></div>
+      <div id="handle-bl"></div>
+      <div id="handle-br"></div>
+    </div>
   </div>
+</div>
+<div id="controls">
+  <button id="cropBtn">Crop Image</button>
+  <button id="resetBtn">Reset</button>
+</div>
 
-  <script src="app.js"></script>
+<script>
+  const container = document.getElementById('container');
+  const canvas = document.getElementById('imageCanvas');
+  const ctx = canvas.getContext('2d');
+  const cropBox = document.getElementById('crop-box');
+
+  // Set canvas natural size and scale for crispness
+  const canvasWidth = 800;
+  const canvasHeight = 600;
+  canvas.width = canvasWidth;
+  canvas.height = canvasHeight;
+
+  // Load example image
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = "https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=800&q=80";
+
+  img.onload = () => {
+    drawImage();
+  };
+
+  function drawImage() {
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
+  }
+
+  // Drag & resize crop box
+  let dragging = false, resizing = false, resizeDir = null;
+  let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+  cropBox.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const rect = cropBox.getBoundingClientRect();
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = rect.left;
+    startTop = rect.top;
+    startWidth = rect.width;
+    startHeight = rect.height;
+
+    // Check if resizing on handles
+    if(e.target.id.startsWith('handle-')) {
+      resizing = true;
+      resizeDir = e.target.id.split('-')[1];
+    } else {
+      dragging = true;
+    }
+    document.body.style.userSelect = 'none';
+  });
+
+  window.addEventListener('pointermove', e => {
+    if (!dragging && !resizing) return;
+    e.preventDefault();
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+
+    if (dragging) {
+      let newLeft = startLeft + dx - container.getBoundingClientRect().left;
+      let newTop = startTop + dy - container.getBoundingClientRect().top;
+
+      // Clamp within container
+      newLeft = Math.max(0, Math.min(newLeft, container.clientWidth - cropBox.offsetWidth));
+      newTop = Math.max(0, Math.min(newTop, container.clientHeight - cropBox.offsetHeight));
+
+      cropBox.style.left = newLeft + 'px';
+      cropBox.style.top = newTop + 'px';
+    }
+
+    if (resizing) {
+      let newLeft = startLeft - container.getBoundingClientRect().left;
+      let newTop = startTop - container.getBoundingClientRect().top;
+      let newWidth = startWidth;
+      let newHeight = startHeight;
+
+      switch(resizeDir) {
+        case 'tl':
+          newWidth = startWidth - dx;
+          newHeight = startHeight - dy;
+          newLeft = startLeft + dx - container.getBoundingClientRect().left;
+          newTop = startTop + dy - container.getBoundingClientRect().top;
+          break;
+        case 'tr':
+          newWidth = startWidth + dx;
+          newHeight = startHeight - dy;
+          newTop = startTop + dy - container.getBoundingClientRect().top;
+          break;
+        case 'bl':
+          newWidth = startWidth - dx;
+          newHeight = startHeight + dy;
+          newLeft = startLeft + dx - container.getBoundingClientRect().left;
+          break;
+        case 'br':
+          newWidth = startWidth + dx;
+          newHeight = startHeight + dy;
+          break;
+      }
+
+      // Minimum size
+      newWidth = Math.max(50, newWidth);
+      newHeight = Math.max(50, newHeight);
+
+      // Clamp crop box within container
+      if(newLeft < 0) {
+        newWidth += newLeft;
+        newLeft = 0;
+      }
+      if(newTop < 0) {
+        newHeight += newTop;
+        newTop = 0;
+      }
+      if(newLeft + newWidth > container.clientWidth) {
+        newWidth = container.clientWidth - newLeft;
+      }
+      if(newTop + newHeight > container.clientHeight) {
+        newHeight = container.clientHeight - newTop;
+      }
+
+      cropBox.style.width = newWidth + 'px';
+      cropBox.style.height = newHeight + 'px';
+      cropBox.style.left = newLeft + 'px';
+      cropBox.style.top = newTop + 'px';
+    }
+  });
+
+  window.addEventListener('pointerup', e => {
+    dragging = false;
+    resizing = false;
+    resizeDir = null;
+    document.body.style.userSelect = '';
+  });
+
+  // Crop button logic
+  document.getElementById('cropBtn').addEventListener('click', () => {
+    // Calculate cropping rectangle in image coordinates
+    const cropRect = cropBox.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    const sx = (cropRect.left - containerRect.left) * (img.naturalWidth / canvasWidth);
+    const sy = (cropRect.top - containerRect.top) * (img.naturalHeight / canvasHeight);
+    const sw = cropRect.width * (img.naturalWidth / canvasWidth);
+    const sh = cropRect.height * (img.naturalHeight / canvasHeight);
+
+    // Create temp canvas for cropped image
+    const tempCanvas = document.createElement('canvas');
+    const tctx = tempCanvas.getContext('2d');
+    tempCanvas.width = sw;
+    tempCanvas.height = sh;
+
+    tctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+
+    // Replace current canvas image
+    canvas.width = sw;
+    canvas.height = sh;
+    ctx.clearRect(0, 0, sw, sh);
+    ctx.drawImage(tempCanvas, 0, 0);
+
+    // Hide crop box after crop
+    cropBox.style.display = 'none';
+  });
+
+  // Reset button reloads image & shows crop box
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    cropBox.style.display = 'block';
+    cropBox.style.top = '50px';
+    cropBox.style.left = '50px';
+    cropBox.style.width = '200px';
+    cropBox.style.height = '150px';
+    drawImage();
+  });
+</script>
 </body>
 </html>
