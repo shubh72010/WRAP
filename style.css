@@ -24,73 +24,137 @@ header {
 header input[type="file"] {
     color: white;
 }
+header label {
+    margin-right: 10px;
+}
 
 main {
     display: flex;
     flex-grow: 1;
-    overflow: hidden; /* Important for layout */
+    overflow: hidden;
 }
 
 .toolbar {
-    width: 250px;
+    width: 280px; /* Slightly wider for more controls */
     background-color: #444;
     color: white;
     padding: 15px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .toolbar h2, .toolbar h3 {
     margin-top: 0;
     margin-bottom: 10px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 5px;
 }
 
-.toolbar button, .toolbar label, .toolbar input {
+.toolbar button, .toolbar label, .toolbar input[type="range"], .toolbar input[type="number"] {
     display: block;
-    width: calc(100% - 20px);
+    width: calc(100% - 10px); /* Adjust for padding */
     margin-bottom: 10px;
-    padding: 8px;
+    padding: 8px 5px;
     box-sizing: border-box;
+}
+.toolbar input[type="range"]{
+    padding: 0;
+}
+
+
+.canvas-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column; /* To stack text and canvas-container */
+    background-color: #666; /* Darker background for canvas area */
+    padding: 10px;
+}
+.canvas-area p {
+    color: #ccc;
+    text-align: center;
+    margin: 0 0 5px 0;
+    font-size: 0.9em;
 }
 
 .canvas-container {
     flex-grow: 1;
+    position: relative; /* For absolute positioning of selection canvas */
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #777;
-    padding: 20px;
-    overflow: auto; /* Allow scrollbars if canvas is larger */
+    overflow: auto; /* If canvas gets too big */
 }
 
-#imageCanvas {
-    border: 1px solid #ccc;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain; /* Ensure image fits within canvas bounds visually if not scaled */
+#imageCanvas, #selectionCanvas {
+    border: 1px solid #999;
+    /* max-width: 100%;
+    max-height: 100%; */ /* We will control size via JS */
+    object-fit: contain;
+    position: absolute; /* Overlay selectionCanvas on imageCanvas */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
+
+#selectionCanvas {
+    z-index: 10; /* Ensure it's on top */
+    pointer-events: none; /* Initially, let clicks pass through to imageCanvas or tool handlers */
+}
+.canvas-container.selecting #selectionCanvas {
+    pointer-events: auto; /* Enable pointer events when selection tool is active */
+    cursor: crosshair;
+}
+
 
 .layers-panel {
-    width: 200px;
+    width: 220px; /* Slightly wider */
     background-color: #555;
     color: white;
     padding: 15px;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
 .layers-panel ul {
     list-style: none;
     padding: 0;
+    margin:0 0 10px 0;
+    flex-grow: 1; /* Allow list to take available space */
 }
 
 .layers-panel li {
     padding: 8px;
     border-bottom: 1px solid #666;
     cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9em;
+}
+
+.layers-panel li:hover {
+    background-color: #6a6a6a;
 }
 
 .layers-panel li.active {
     background-color: #007bff;
+    color: white;
 }
+.layers-panel li .layer-name {
+    flex-grow: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.layers-panel li .visibility-toggle {
+    margin-left: 5px;
+    padding: 2px 5px;
+    font-size: 0.8em;
+    cursor: pointer;
+}
+
 
 footer {
     background-color: #333;
@@ -98,3 +162,4 @@ footer {
     padding: 10px;
     text-align: center;
 }
+
